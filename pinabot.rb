@@ -15,10 +15,10 @@ OPTOUT   = ''      # bot handles opt-outs and this is the trigger word
 SUB      = ''      # subreddit to monitor (unfortunately only one at this time)
 
 # these are ideally set via environment variables or using the .env file (see README.md), but can be hardwired here
-CLIENT   = ''
-SECRET   = ''
-USERNAME = ''
-PASSWORD = ''
+REDD_CLIENT   = ENV['REDD_CLIENT']
+REDD_SECRET   = ENV['REDD_SECRET']
+REDD_USERNAME = ENV['REDD_USERNAME']
+REDD_PASSWORD = ENV['REDD_PASSWORD']
 
 # here's the general template for what the bot posts when triggered (uses Reddit markdown syntax)
 REPLY_TEMPLATE = <<-ENDTEMPLATE
@@ -34,10 +34,10 @@ ENDTEMPLATE
 # set up a session using environment variables or hardcoded variables above
 SESSION = Redd.it(
   user_agent: "redd:#{I18n.transliterate(BOTNAME).downcase}:v#{VERSION} (by /u/#{AUTHOR})",
-  client_id:  ENV['REDD_CLIENT']   || CLIENT,
-  secret:     ENV['REDD_SECRET']   || SECRET,
-  username:   ENV['REDD_USERNAME'] || USERNAME,
-  password:   ENV['REDD_PASSWORD'] || PASSWORD
+  client_id:  REDD_CLIENT,
+  secret:     REDD_SECRET,
+  username:   REDD_USERNAME,
+  password:   REDD_PASSWORD
 )
 
 # here are the sets of triggers and their replies
@@ -103,7 +103,7 @@ end
 
 # don't reply to the bot's comments or users who have unsubscribed
 def unsubscribed?(username)
-  return true if username == (ENV['REDD_USERNAME'].downcase || USERNAME.downcase) ||
+  return true if username == REDD_USERNAME.downcase ||
     DB.get_first_value('select count(*) from unsubscribed where LOWER(username) = ?', username) > 0
 end
 

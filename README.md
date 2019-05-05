@@ -18,9 +18,9 @@ You'll likely want to create a separate Reddit account for your bot, so that it 
 
 1. Visit [Preferences / Apps](https://www.reddit.com/prefs/apps/) within Reddit
 2. Click "create another app..." button and register your app/bot
-3. Copy `CLIENT_ID` into the `.env` file or hardcode into `pinabot.rb`. This value is located directly below the bot's name within the newly created bot in Reddit. It'll look similar to `94eF93wWwmZvyg`.
-4. Copy `SECRET` into the `.env` file or hardcode into `pinabot.rb`. This value is labeled as `Secret` within the newly created bot in Reddit.
-5. Copy `USERNAME` and `PASSWORD` for the Reddit account associated with the bot into `.env` or hardcode into `pinabot.rb`.
+3. Set `REDD_CLIENT` in the `.env` file or hardcode into `pinabot.rb`. This value is located directly below the bot's name within the newly created bot in Reddit. It'll look similar to `94eF93wWwmZvyg`.
+4. Set `REDD_SECRET` in the `.env` file or hardcode into `pinabot.rb`. This value is labeled as `Secret` within the newly created bot in Reddit.
+5. Set `REDD_USERNAME` and `REDD_PASSWORD` for the Reddit account associated with the bot in `.env` or hardcode into `pinabot.rb`.
 
 ### Install necessary Gems and prepare database
 
