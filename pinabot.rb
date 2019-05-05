@@ -81,57 +81,57 @@ DICTIONARY = [
 ]
 
 # convert the triggers into useable regular expression object
-DICTIONARY.each do |d|
-  # add word boundary to regular expressions
-  d[:regex] = Regexp.union(d[:triggers])
-end
+DICTIONARY.each { |d| d[:regex] = Regexp.union(d[:triggers]) }
 
 # rotate the comments array and pick the first (roundrobin instead of random)
 def trigger_a_comment(body)
-  DICTIONARY.each do |d|
-    return d[:replies].rotate!.first if body =~ /\b#{d[:regex].source}\b/i
-  end
+  DICTIONARY.each { |d| return d[:replies].rotate!.first if body =~ /\b#{d[:regex].source}\b/i }
 
-  nil
+  nil # return nil since we didn't find any trigger words
 end
 
 # save space in the database by trimming off '/r/subreddit/comments/'
 def trim_permalink(link)
   link.sub!(/^(\/r.*comments\/)/, '')
-  link
+
+  link # return the trimmed link
 end
 
 # don't reply to the bot's comments or users who have unsubscribed
-def unsubscribed?(username)
-  return true if username == REDD_USERNAME.downcase ||
-    DB.get_first_value('select count(*) from unsubscribed where LOWER(username) = ?', username) > 0
+def unsubscribed?(commenter)
+  return true if commenter.downcase == REDD_USERNAME.downcase ||
+    DB.get_first_value('select count(*) from unsubscribed where LOWER(username) = ?', commenter.downcase) > 0
 end
 
 # wait ten seconds from script start to actually start processing comments (we only want new comments)
 READY_TIME = Time.now.utc + 10
 
 SESSION.subreddit(SUB).comment_stream( {limit: 0} ) do |comment|
-  next if Time.now.utc < READY_TIME # wait for number of seconds after script starts
+  next if Time.now.utc < READY_TIME # we delay because we only want new comments, not existing ones
+
+  commenter = comment.author.name
 
   # handle unsubscribes
-  if comment.body =~ /#{OPTOUT}/i && !unsubscribed?(comment.author.name.downcase)
+  if comment.body =~ /#{OPTOUT}/i && !unsubscribed?(commenter)
     begin
-      DB.execute 'insert into unsubscribed (username) values (?)', [comment.author.name.downcase]
-      puts "#{comment.author.name} unsubscribed."
+      DB.execute 'insert into unsubscribed (username) values (?)', [commenter.downcase]
+      puts "#{commenter} unsubscribed."
     rescue SQLite3::ConstraintException
-      puts "#{comment.author.name} already unsubscribed."
+      puts "#{commenter} already unsubscribed."
+    rescue
+      puts "SQLite error looking up #{commenter} in unsubscribed usernames."
     end
 
     next
   end
 
   # only reply if user hasn't unsubscribed and the comment includes a trigger word
-  if (reply = trigger_a_comment(comment.body)) && !unsubscribed?(comment.author.name.downcase)
+  if (reply = trigger_a_comment(comment.body)) && !unsubscribed?(commenter)
     permalink = trim_permalink(comment.permalink) # save space in database by trimming permalink
 
     # only reply if we haven't replied already
     unless DB.get_first_value('select count(*) from permalinks where link = ?', permalink) > 0
-      puts "#{comment.author.name} triggered."
+      puts "#{commenter} triggered."
 
       # keep track of this comment, so we don't reply to it again
       begin
@@ -146,7 +146,7 @@ SESSION.subreddit(SUB).comment_stream( {limit: 0} ) do |comment|
       end
       with_retries(:max_tries => 5, :handler => handler) do |attempt|
         # interpolate our custom reply into the reply template and reply to the comment
-        comment.reply REPLY_TEMPLATE % {commenter: comment.author.name, reply: reply}
+        comment.reply REPLY_TEMPLATE % {commenter: commenter, reply: reply}
       end
     end
   end
